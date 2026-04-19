@@ -36,7 +36,7 @@ python server.py
 
 The server runs on port `5555` with a self-signed HTTPS cert (required for camera access on iOS). On first connection from your phone, accept the cert warning once.
 
-Edit `GDRIVE_ROOT` in `server.py` to point to your Google Drive folder if needed.
+Set the `GDRIVE_ROOT` environment variable to your Google Drive path (e.g. `set GDRIVE_ROOT=C:\Users\you\My Drive`), or it defaults to `C:\Users\<your-username>\My Drive`.
 
 ### keeping it running
 
