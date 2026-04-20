@@ -1,32 +1,43 @@
-# receipt-splitter
+# Receipt Splitter
 
-A kawaii PWA for snapping and queuing shared receipts. Offline-first — receipts are saved locally and sync to your home server when you're back on wifi.
+A kawaii offline-first PWA for snapping and queuing shared receipts. Works entirely on-device — the server is optional.
 
 **[→ Open the app](https://nEmily.github.io/receipt-splitter/)**
 
-## how it works
+No accounts. No cloud. No third parties. Just your phone and (optionally) your own computer.
 
-1. Open the PWA on your phone (add to home screen for the full experience)
-2. First launch asks for your name + your Tailscale server URL
-3. Snap a receipt → jot a quick note about who split what
-4. It uploads directly to your home computer over Tailscale
-5. Your `read_receipts.py` script picks it up on Sunday and does the math
+---
 
-No cloud, no accounts, no third parties — just your phone talking to your own computer.
+## what it does
 
-## setup
+1. Open the PWA on your phone and add it to your home screen
+2. Snap a photo of a receipt and jot a note ("mike and i split apps, i had 2 drinks")
+3. Receipts are saved locally — they queue up until you're ready to review them
+4. Optionally sync to a home server over your local network or Tailscale
 
-### pwa (github pages)
+The idea: capture receipts in the moment, sort out the math later. No pressure to split right now.
 
-The PWA lives at `https://nEmily.github.io/receipt-splitter/`. Open it in Safari, tap Share → Add to Home Screen for the full standalone experience.
+---
 
-On first launch it'll ask for:
-- **Your name** — just for the greeting
-- **Server URL** — your Tailscale server address, e.g. `https://100.x.x.x:5555` (you can skip this and add it later in settings)
+## using it
 
-All config stays in `localStorage` — nothing leaves your device.
+### just the app (no server needed)
 
-### server (home computer)
+Open [the PWA](https://nEmily.github.io/receipt-splitter/) in Safari on iOS or Chrome on Android. Add to home screen for the full standalone experience.
+
+On first launch it asks for your name and an optional server URL. You can skip the server — receipts will queue locally and you can review them from the app.
+
+### fork and deploy your own copy
+
+The whole app is a single `index.html` file with no build step. To host your own copy:
+
+1. Fork this repo
+2. Go to **Settings → Pages → Source: Deploy from branch → Branch: main, folder /**
+3. Your app lives at `https://<your-username>.github.io/receipt-splitter/`
+
+### with a home server (optional)
+
+If you want receipts to sync to a folder on your computer:
 
 ```powershell
 cd server
@@ -34,28 +45,50 @@ pip install -r requirements.txt
 python server.py
 ```
 
-The server runs on port `5555` with a self-signed HTTPS cert (required for camera access on iOS). On first connection from your phone, accept the cert warning once.
-
-Set the `GDRIVE_ROOT` environment variable to your Google Drive path (e.g. `set GDRIVE_ROOT=C:\Users\you\My Drive`), or it defaults to `C:\Users\<your-username>\My Drive`.
-
-### keeping it running
-
-Use Windows Task Scheduler to run `server.py` at startup:
+Set `RECEIPTS_DIR` to wherever you want receipts saved (defaults to `./receipts/`):
 
 ```powershell
-$action  = New-ScheduledTaskAction -Execute "python" -Argument "C:\path\to\server\server.py" -WorkingDirectory "C:\path\to\server"
+$env:RECEIPTS_DIR = "C:\path\to\your\receipts"
+python server.py
+```
+
+The server runs on port `5555` with a self-signed HTTPS cert. On first connection from your phone, accept the cert warning once — iOS requires HTTPS for camera access.
+
+**Accessing from outside your home network:** [Tailscale](https://tailscale.com) works great. Enter your Tailscale IP as the server URL in the app (`https://100.x.x.x:5555`).
+
+**Keeping it running on Windows:**
+
+```powershell
+$action  = New-ScheduledTaskAction -Execute "python" -Argument "server.py" -WorkingDirectory "C:\path\to\server"
 $trigger = New-ScheduledTaskTrigger -AtLogOn
 Register-ScheduledTask -Action $action -Trigger $trigger -TaskName "ReceiptSplitter" -RunLevel Highest
 ```
 
+---
+
+## customizing with Claude
+
+This app was built entirely with [Claude Code](https://claude.ai/code). If you want to adapt it — change the style, add features, modify how receipts are stored — open the project in Claude and describe what you want. The whole app is in three files (`index.html`, `sw.js`, `manifest.json`) so it's easy to work with.
+
+Some ideas people might want to customize:
+- Change where the server saves receipts (Dropbox, NAS, specific folder)
+- Add a receipt review/ledger screen
+- Change the aesthetic
+- Add multi-person split math
+
+---
+
 ## stack
 
-- React 18 (no build step — Babel standalone for JSX)
+- React 18 (no build step — Babel standalone)
 - IndexedDB for offline queue
-- Flask + flask-cors for the upload server
-- Tailscale for secure remote access
+- Service worker for offline support + caching
+- Flask + flask-cors for the optional upload server
 - GitHub Pages for hosting
+
+---
 
 ## privacy
 
-Zero telemetry. Your name and server URL live in `localStorage` only. Receipt photos never leave your local network.
+Zero telemetry. Your name lives in `localStorage`. Receipt photos never leave your device unless you configure a server, and that server runs on your own hardware.
+

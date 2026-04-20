@@ -1,21 +1,23 @@
 """
-Receipt Splitter — Flask upload server.
+Receipt Splitter — optional Flask upload server.
 
-Receives photo uploads from the PWA and saves them to your
-Google Drive Receipts folder so read_receipts.py picks them up.
+Receives photo uploads from the PWA and saves them to a local folder.
+The PWA works fine without this server — receipts queue on-device.
 
-Setup (run once, in PowerShell):
-    pip install flask flask-cors pyopenssl
+Setup:
+    pip install -r requirements.txt
     python server.py
 
-On your iPhone, open (via Tailscale):
-    https://<tailscale-hostname>:5555
+Environment variables:
+    RECEIPTS_DIR   where to save receipts (default: ./receipts/)
+    PORT           port to listen on (default: 5555)
 
-Accept the self-signed cert warning once — then camera works fine.
+The server uses a self-signed HTTPS cert (required for camera on iOS).
+Accept the cert warning once in Safari, then camera works fine.
 
-Upload format matches read_receipts.py:
-    Receipts/<id>.jpg   — the photo
-    Receipts/<id>.json  — { id, timestamp, description, photo, status }
+Each receipt is saved as two files:
+    <id>.jpg / <id>.png   — the photo
+    <id>.json             — { id, timestamp, description, photo, status }
 """
 
 import json
@@ -28,9 +30,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 # ── Config ──────────────────────────────────────────────────────────
-# Set GDRIVE_ROOT env var to your Google Drive path, e.g. C:\Users\<you>\My Drive
-GDRIVE_ROOT    = os.environ.get("GDRIVE_ROOT", r"C:\Users\<your-username>\My Drive")
-RECEIPTS_QUEUE = os.path.join(GDRIVE_ROOT, "Receipts")
+RECEIPTS_QUEUE = os.environ.get("RECEIPTS_DIR", "./receipts")
 PORT           = int(os.environ.get("PORT", 5555))
 
 app = Flask(__name__)
